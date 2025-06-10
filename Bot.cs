@@ -18,8 +18,8 @@ public static class Bot
     private static readonly Dictionary<string, Func<Message, Task>>? CommandHandlers = new()
     {
         {ButtonTexts.AddTask, AddNewTask},
-        {ButtonTexts.DeleteTasks, ShowSchedule},
-        {ButtonTexts.ShowSchedule, DeleteTask}
+        {ButtonTexts.ShowSchedule, ShowSchedule},
+        {ButtonTexts.DeleteTasks, DeleteTask}
     };
     private static readonly ReplyKeyboardMarkup MainMenuKeyboard = new([
         [ButtonTexts.AddTask, ButtonTexts.DeleteTasks],
