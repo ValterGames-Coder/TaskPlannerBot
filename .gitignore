@@ -263,4 +263,4 @@ FakesAssemblies/
 *.opt
 .env
 database.db
-.idea
+.idea/
