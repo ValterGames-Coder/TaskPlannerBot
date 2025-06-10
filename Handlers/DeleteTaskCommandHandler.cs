@@ -29,6 +29,7 @@ public class DeleteTaskCommandHandler : StateHandler
                 return true;
             }
         }
+        await client.DeleteMessage(chatId, message.Id);
         return false;
     }
 }

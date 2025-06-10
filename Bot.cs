@@ -15,11 +15,11 @@ public static class ButtonTexts
 public static class Bot
 {
     private static TelegramBotClient? _client;
-    private static readonly Dictionary<string, Func<Message, Task>>? CommandHandlers = new()
+    private static readonly Dictionary<string, Func<StateHandler>>? CommandHandlers = new()
     {
-        {ButtonTexts.AddTask, AddNewTask},
-        {ButtonTexts.ShowSchedule, ShowSchedule},
-        {ButtonTexts.DeleteTasks, DeleteTask}
+        {ButtonTexts.AddTask, () => new AddTaskCommandHandler()},
+        {ButtonTexts.ShowSchedule, () => new ShowScheduleCommandHandler()},
+        {ButtonTexts.DeleteTasks, () => new DeleteTaskCommandHandler()}
     };
     private static readonly ReplyKeyboardMarkup MainMenuKeyboard = new([
         [ButtonTexts.AddTask, ButtonTexts.DeleteTasks],
@@ -80,22 +80,24 @@ public static class Bot
 
         await WithClient(async client =>
         {
-            if (CommandHandlers!.TryGetValue(message.Text, out var task))
+            if (CommandHandlers!.TryGetValue(message.Text, out var handler))
             {
-                await task(message);
+                _currentState = handler();
+                await _currentState.MakeStep(client, message);
+            }
+            else if (message.Text.StartsWith('/'))
+            {
+                _currentState = null;
+                string[] commandParts = message.Text.Split(" ");
+                string command = commandParts[0];
+                string args = commandParts.Length > 1 ? commandParts[1] : String.Empty;
+                await OnCommand(command, args, message);
             }
             else if (_currentState != null)
             {
                 bool isCompleted = await _currentState.MakeStep(client, message);
                 if (isCompleted)
                     _currentState = null;
-            }
-            else if (message.Text.StartsWith('/'))
-            {
-                string[] commandParts = message.Text.Split(" ");
-                string command = commandParts[0];
-                string args = commandParts.Length > 1 ? commandParts[1] : String.Empty;
-                await OnCommand(command, args, message);
             }
             else
                 await client.SendMessage(_chatId, "⚠️ Неизвестная команда!");
@@ -115,7 +117,7 @@ public static class Bot
                 case "/reset":
                     await Database.ResetDatabase();
                     await client.SendMessage(_chatId, "✅ База данных была очищена",
-                        replyMarkup: CommandHandlers!.Keys.ToArray());
+                        replyMarkup: MainMenuKeyboard);
                     break;
                 default:
                     await client.SendMessage(_chatId, "⚠️ Неизвестная команда!");
@@ -137,33 +139,6 @@ public static class Bot
                     await CallbackQueryHandler.ShowSchedule(client, callbackQuery, showScheduleCommandHandler);
                     break;
             }
-        });
-    }
-
-    private static async Task AddNewTask(Message message)
-    {
-        await WithClient(async client =>
-        {
-            _currentState = new AddTaskCommandHandler();
-            await _currentState.MakeStep(client, message);
-        });
-    }
-
-    private static async Task ShowSchedule(Message message)
-    {
-        await WithClient(async client =>
-        {
-            _currentState = new ShowScheduleCommandHandler();
-            await _currentState.MakeStep(client, message);
-        });
-    }
-    
-    private static async Task DeleteTask(Message message)
-    {
-        await WithClient(async client =>
-        {
-            _currentState = new DeleteTaskCommandHandler();
-            await _currentState.MakeStep(client, message);
         });
     }
 

@@ -38,7 +38,7 @@ public class ShowScheduleCommandHandler : StateHandler
         }
         else
             await client.EditMessageText(chatId, MessageId, text, replyMarkup: replyMarkup, parseMode: ParseMode.Html);
-
+        
         return false;
     }
 }
